@@ -175,10 +175,14 @@ def escalate_to_human_agent(customer_id: str, issue_description: str, priority: 
             "issue": issue_description,
             "priority": priority
         }
+        # Send the event to the support-tickets topic.
         producer.send("support-tickets", value=event_payload)
+        # Flush the producer to ensure all messages are sent before closing the connection.
         producer.flush()
+        # Close the producer connection after flushing to release resources.
         producer.close()
 
+        # Return a structured response indicating the event was successfully escalated.
         return json.dumps({
             "status": "escalated",
             "topic": "support-tickets",
