@@ -1,10 +1,28 @@
+﻿"""Initialize a local PostgreSQL database for demo application data.
+
+This script creates a simple relational schema for customers and orders and seeds it with
+sample records. It is intended for local development and testing when a project needs a
+traditional SQL-backed data store alongside a vector database or AI application workflow.
+"""
+
 import os
 import psycopg2
 from dotenv import load_dotenv
 
+# Load environment variables from the local .env file so the database credentials and
+# configuration remain outside the source code and easy to change per environment.
 load_dotenv()
 
+
 def init_postgres():
+    """Create the relational schema and seed it with representative example data.
+
+    The script resets the demo tables so each run starts from a known, clean state. This is
+    useful during development when you want to reinitialize the database quickly without
+    manually deleting rows or recreating tables in a database client.
+    """
+    # Connect to PostgreSQL using configuration values from environment variables. Defaults are
+    # provided so the script works for a standard local developer setup without extra setup.
     conn = psycopg2.connect(
         host=os.getenv("POSTGRES_HOST", "localhost"),
         port=os.getenv("POSTGRES_PORT", "5432"),
@@ -12,9 +30,12 @@ def init_postgres():
         user=os.getenv("POSTGRES_USER", "devuser"),
         password=os.getenv("POSTGRES_PASSWORD", "devpassword")
     )
+
+    # A database cursor lets us execute SQL statements against the PostgreSQL connection.
     cursor = conn.cursor()
 
-    # Create schema
+    # Rebuild the schema from scratch for a predictable local data set. Dropping tables first
+    # ensures the database does not fail on recreation if the script is run multiple times.
     cursor.execute("""
     DROP TABLE IF EXISTS orders;
     DROP TABLE IF EXISTS customers;
@@ -36,7 +57,8 @@ def init_postgres():
     );
     """)
 
-    # Seed initial test data
+    # Seed a small set of initial customers and orders. These values represent example data for
+    # feature testing, demos, and basic reporting workflows in the application.
     cursor.execute("""
     INSERT INTO customers (customer_id, name, email, tier) VALUES
         ('CUST-101', 'Alice Johnson', 'alice@example.com', 'Premium'),
@@ -48,10 +70,15 @@ def init_postgres():
         ('ORD-9003', 'CUST-102', 'Wireless Mesh Node', 'Delivered', '2026-10-28', 59.99);
     """)
 
+    # Commit all changes to the database so the schema and sample records persist.
     conn.commit()
+
+    # Clean up the database resources used by the script before exiting.
     cursor.close()
     conn.close()
     print("PostgreSQL tables created and seed data inserted successfully.")
 
+
 if __name__ == "__main__":
+    # Run the database initialization only when the script is executed directly.
     init_postgres()
